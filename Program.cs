@@ -16,7 +16,7 @@ namespace todo_cqrs
         Sqlite,
         SqlServer
     }
-    
+
     class Program
     {
         private static IServiceProvider _serviceProvider;
@@ -56,9 +56,11 @@ namespace todo_cqrs
 
 
             var eventContext = _serviceProvider.GetService<EventContext>();
+            eventContext.Database.EnsureCreated();
             _store = new EventStore(eventContext, TodoEventHandler);
 
             var todoContext = _serviceProvider.GetService<TodoContext>();
+            todoContext.Database.EnsureCreated();
             var loggerFactory = _serviceProvider.GetService<ILoggerFactory>()
                                     .AddConsole(LogLevel.Trace);
 
