@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using todo_cqrs.Core;
@@ -21,10 +22,9 @@ namespace todo_cqrs
         private static EventStore _store;
         private static ITodoService _todoService;
         private static DatabaseType _dbType = DatabaseType.InMemory;
+        private static ILogger<Program> _logger;
         static void Main(string[] args)
         {
-            Console.WriteLine("Todo Application");
-            Console.WriteLine("================");
             // Initialize IoC container
             var services = new ServiceCollection();
 
@@ -34,14 +34,12 @@ namespace todo_cqrs
             switch (_dbType)
             {
                 case DatabaseType.InMemory:
-                    Console.WriteLine("Database Type = InMemory\n");
                     services.AddDbContext<EventContext>(options => 
                         options.UseInMemoryDatabase("events"));
                     services.AddDbContext<TodoContext>(options => 
                         options.UseInMemoryDatabase("todos"));
                     break;
                 case DatabaseType.Sqlite:
-                    Console.WriteLine("Database Type = Sqlite\n");
                     services.AddDbContext<EventContext>(options => 
                         options.UseSqlite("Data Source=events.db"));
                     services.AddDbContext<TodoContext>(options => 
@@ -52,6 +50,7 @@ namespace todo_cqrs
             }
 
             services.AddSingleton<ITodoService, TodoService>();
+            services.AddLogging();
             _serviceProvider = services.BuildServiceProvider();
 
 
@@ -59,7 +58,16 @@ namespace todo_cqrs
             _store = new EventStore(eventContext, TodoEventHandler);
 
             var todoContext = _serviceProvider.GetService<TodoContext>();
-            _todoService = new TodoService(todoContext);
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>()
+                                    .AddConsole(LogLevel.Trace);
+
+            _logger = loggerFactory.CreateLogger<Program>();
+
+            _todoService = new TodoService(todoContext, loggerFactory);
+
+            _logger.LogInformation("Todo Application Started");
+            if (_dbType == DatabaseType.InMemory)
+                _logger.LogWarning("Storage type in-memory, data will be lost at the end of the application");
 
             /* Command */
             CreateTodoItem(1, "Pickup Milk");
@@ -71,7 +79,7 @@ namespace todo_cqrs
             PrintTodos();
 
             // PrintEvents();
-
+            _logger.LogInformation("Enf of Application");
             
         }
         private static void TodoEventHandler(object sender, EventArgs e)
@@ -81,24 +89,21 @@ namespace todo_cqrs
                 var args = e as TodoItemCreatedArgs;
                 if (args != null) {
                     _todoService.CreateTodo(new TodoItem(args.Id, args.Title, args.IsCompleted));
-                    Console.WriteLine("Todo Item Created");
                 }                
             }
             else if (e.GetType() == typeof(TodoItemCompletedArgs)) 
             {
                 var args = e as TodoItemCompletedArgs;
                 _todoService.CompleteTodo(args.Id);
-                Console.WriteLine("Todo Item Completed");
             }
             else if (e.GetType() ==typeof(TodoItemDeletedArgs)) 
             {
                 var args = e as TodoItemDeletedArgs;
                 _todoService.DeleteTodo(args.Id);
-                Console.WriteLine("Todo Item Deleted");
             }
             else 
             {
-                Console.WriteLine("Todo EventHandler called");
+                _logger.LogInformation("Todo EventHandler called");
             }
         }
         private static void CreateTodoItem(Int64 id, string title, bool isCompleted = false)
