@@ -3,13 +3,21 @@ A sample todo application, while learning concepts like CQRS, DDD, Entity Framew
 
 ### Getting Started
 Clone the project
-```git clone https://github.com/wahabakhtar/CQRS-DDD-EFCore-DI-Sample.git```
+```
+git clone https://github.com/wahabakhtar/CQRS-DDD-EFCore-DI-Sample.git
+```
 
 Build
-```dotnet build```
+```
+dotnet build
+```
 
 Run
-```dotnet run```
+```
+dotnet run
+```
 
 Run with Sqlite Support
-```dotnet run -- Sqlite```
+```
+dotnet run -- Sqlite
+```
