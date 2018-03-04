@@ -16,6 +16,7 @@ namespace todo_cqrs
         Sqlite,
         SqlServer
     }
+    
     class Program
     {
         private static IServiceProvider _serviceProvider;
@@ -65,7 +66,7 @@ namespace todo_cqrs
 
             _todoService = new TodoService(todoContext, loggerFactory);
 
-            _logger.LogInformation("Todo Application Started");
+            _logger.LogInformation("{Time} | Todo Application Started", DateTime.Now);
             if (_dbType == DatabaseType.InMemory)
                 _logger.LogWarning("Storage type in-memory, data will be lost at the end of the application");
 
@@ -79,7 +80,7 @@ namespace todo_cqrs
             PrintTodos();
 
             // PrintEvents();
-            _logger.LogInformation("Enf of Application");
+            _logger.LogInformation("{Time} | End of Application", DateTime.Now);
             
         }
         private static void TodoEventHandler(object sender, EventArgs e)
