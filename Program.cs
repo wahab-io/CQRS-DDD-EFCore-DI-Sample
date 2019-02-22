@@ -10,13 +10,6 @@ using todo_cqrs.Domain;
 
 namespace todo_cqrs
 {
-    enum DatabaseType
-    {
-        InMemory,
-        Sqlite,
-        SqlServer
-    }
-
     class Program
     {
         private static IServiceProvider _serviceProvider;
@@ -30,24 +23,25 @@ namespace todo_cqrs
             var services = new ServiceCollection();
 
             if (args.Length > 0 && !string.IsNullOrEmpty(args[0]))
-                Enum.TryParse<DatabaseType>(args[0], out _dbType);
+                _dbType = DatabaseType.TryParse(args[0]);
                 
-            switch (_dbType)
+            if(_dbType.CompareTo(DatabaseType.InMemory) == 0)
             {
-                case DatabaseType.InMemory:
-                    services.AddDbContext<EventContext>(options => 
-                        options.UseInMemoryDatabase("events"));
-                    services.AddDbContext<TodoContext>(options => 
-                        options.UseInMemoryDatabase("todos"));
-                    break;
-                case DatabaseType.Sqlite:
-                    services.AddDbContext<EventContext>(options => 
-                        options.UseSqlite("Data Source=events.db"));
-                    services.AddDbContext<TodoContext>(options => 
-                        options.UseSqlite("Data Source=todos.db"));
-                    break;
-                default:
-                    throw new NotImplementedException("Unsupported database type");
+                services.AddDbContext<EventContext>(options => 
+                    options.UseInMemoryDatabase("events"));
+                services.AddDbContext<TodoContext>(options => 
+                    options.UseInMemoryDatabase("todos"));
+            }
+            else if (_dbType.CompareTo(DatabaseType.Sqlite)==0)
+            {
+                services.AddDbContext<EventContext>(options => 
+                    options.UseSqlite("Data Source=events.db"));
+                services.AddDbContext<TodoContext>(options => 
+                    options.UseSqlite("Data Source=todos.db"));
+            }
+            else 
+            {
+                throw new InvalidCastException("Not supported database type");
             }
 
             services.AddSingleton<ITodoService, TodoService>();
